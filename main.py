@@ -10,14 +10,23 @@ from typing import List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
+
+
+
 load_dotenv()
 
 # Suppress warnings
+
+
 warnings.filterwarnings("ignore", category=UserWarning, module="langchain_google_genai")
 
 # Initialize Caspian client
+
+
 cx = Caspian(api_key=os.getenv("CASPIAN_API_KEY"))
 cx.channels.add("telegram", bot_token=os.getenv("TELEGRAM_BOT_TOKEN"))
+
+
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-3.5-flash-lite", 
@@ -106,7 +115,9 @@ class PromptData(BaseModel):
     detected_medication: Optional[DetectedMedicationData] = None
     substitutes: Optional[List[SubstituteData]] = []
 
+
 extractor_llm = llm.with_structured_output(PromptData)
+
 
 prompt_template = ChatPromptTemplate.from_messages([
     ("system", 
@@ -124,9 +135,10 @@ prompt_template = ChatPromptTemplate.from_messages([
 
 extraction_chain = prompt_template | extractor_llm
 
-# ==========================================
-# CORE ENGINE (Used by BOTH API & Telegram)
-# ==========================================
+
+
+
+
 def process_medibot_query(user_prompt: str, session_id: str) -> dict:
     command = user_prompt.strip().lower()
     if command == "/start":
@@ -187,9 +199,7 @@ def process_medibot_query(user_prompt: str, session_id: str) -> dict:
     return final_api_response
 
 
-# ==========================================
-# TELEGRAM FORMATTER (Transforms JSON to text)
-# ==========================================
+
 def format_telegram_reply(payload: dict) -> str:
     # Handle simple text replies from commands
     if "status" in payload:
@@ -210,6 +220,8 @@ def format_telegram_reply(payload: dict) -> str:
         reply_text += f"💊 **Target Drug:** {med.get('brand_name')} (₹{med.get('mrp_inr')})\n"
         reply_text += f"🧪 **Composition:** {med.get('active_composition')}\n"
         reply_text += f"📋 **Class:** {med.get('therapeutic_class')} | {med.get('schedule')}\n\n"
+
+
         
     # 3. Substitutes Data
     if subs:
@@ -224,9 +236,9 @@ def format_telegram_reply(payload: dict) -> str:
     return reply_text
 
 
-# ==========================================
-# CASPIAN TELEGRAM LISTENER
-# ==========================================
+
+
+
 @cx.on_message({"overlap": "queue", "ack": "Analyzing..."})
 def handle_telegram(thread, msg, ctx):
     user_prompt = msg.text or ""
@@ -251,6 +263,9 @@ def handle_telegram(thread, msg, ctx):
     # Also print to terminal for logging
     print("\n📦 --- TELEGRAM PROCESSED PAYLOAD ---")
     print(json.dumps(json_payload, indent=2))
+
+
+
 
 if __name__ == "__main__":
     print("🚀 MediBot Caspian Bot Booted. Listening on Telegram...")
